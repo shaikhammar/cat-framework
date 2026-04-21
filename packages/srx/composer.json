@@ -1,0 +1,31 @@
+{
+    "name": "catframework/srx",
+    "description": "SRX 2.0 segmentation rule parser for the CAT Framework",
+    "type": "library",
+    "version": "0.1.0",
+    "require": {
+        "php": "^8.2",
+        "ext-dom": "*",
+        "ext-libxml": "*",
+        "catframework/core": "^0.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "CatFramework\\Srx\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "CatFramework\\Srx\\Tests\\": "tests/"
+        }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../core"
+        }
+    ]
+}

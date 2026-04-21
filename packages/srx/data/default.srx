@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  CAT Framework default SRX 2.0 segmentation rules.
+
+  Languages: English, Hindi, Urdu, Arabic, French, German, Spanish,
+             Chinese, Japanese, and a Default catch-all.
+
+  Hindi/Urdu/Arabic notes (Risk 3):
+    - Sentence-ending punctuation differs from Latin script.
+    - No uppercase/lowercase distinction, so afterBreak uses \p{L}
+      (any letter) instead of \p{Lu} (uppercase letter).
+    - This produces a slightly weaker heuristic that may over-segment
+      on lists or enumerations. Acceptable for Phase 1.
+-->
+<srx version="2.0" xmlns="http://www.lisa.org/srx20">
+  <header segmentsubflows="yes" cascade="yes">
+    <formathandle type="start"    include="no"/>
+    <formathandle type="end"      include="yes"/>
+    <formathandle type="isolated" include="no"/>
+  </header>
+  <body>
+    <languagerules>
+
+      <!-- ═══════════════════════════════ ENGLISH ═══════════════════════════════ -->
+      <languagerule languagerulename="English">
+        <!-- No-break: common abbreviations -->
+        <rule break="no">
+          <beforebreak>\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|vs|etc|e\.g|i\.e|Rev|Gen|Sgt|Cpl|Lt|Capt|Maj|Col|Insp|St|Ave|Blvd|Dept|approx|est|Inc|Corp|Ltd|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.</beforebreak>
+          <afterbreak>\s</afterbreak>
+        </rule>
+        <!-- No-break: single uppercase initial (e.g., "J. Smith") -->
+        <rule break="no">
+          <beforebreak>\b[A-Z]\.</beforebreak>
+          <afterbreak>\s+[A-Z]</afterbreak>
+        </rule>
+        <!-- No-break: ellipsis -->
+        <rule break="no">
+          <beforebreak>\.\.\.</beforebreak>
+          <afterbreak>\s</afterbreak>
+        </rule>
+        <!-- Break: sentence-ending punctuation followed by whitespace + uppercase -->
+        <rule break="yes">
+          <beforebreak>[\.\?!]+</beforebreak>
+          <afterbreak>\s+\p{Lu}</afterbreak>
+        </rule>
+      </languagerule>
+
+      <!-- ════════════════════════════════ HINDI ════════════════════════════════ -->
+      <!--
+        Devanagari sentence-ending marks:
+          U+0964  ।  DEVANAGARI DANDA (purna viram) — standard sentence end
+          U+0965  ॥  DEVANAGARI DOUBLE DANDA — section/paragraph end
+        afterBreak uses \s*\p{L} (optional whitespace + any letter) because:
+          - Hindi text sometimes lacks a space after ।
+          - No case distinction exists in Devanagari
+      -->
+      <languagerule languagerulename="Hindi">
+        <rule break="yes">
+          <beforebreak>[।॥]</beforebreak>
+          <afterbreak>\s*\p{L}</afterbreak>
+        </rule>
+        <!-- Latin punctuation in mixed Hindi/English content -->
+        <rule break="yes">
+          <beforebreak>[\.\?!]+</beforebreak>
+          <afterbreak>\s+\p{L}</afterbreak>
+        </rule>
+      </languagerule>
+
+      <!-- ════════════════════════════════ URDU ════════════════════════════════ -->
+      <!--
+        Urdu sentence-ending marks (Arabic script):
+          U+06D4  ۔  ARABIC FULL STOP
+          U+061F  ؟  ARABIC QUESTION MARK
+      -->
+      <languagerule languagerulename="Urdu">
+        <rule break="yes">
+          <beforebreak>[۔؟!]</beforebreak>
+          <afterbreak>\s*\p{L}</afterbreak>
+        </rule>
+        <rule break="yes">
+          <beforebreak>[\.\?!]+</beforebreak>
+          <afterbreak>\s+\p{L}</afterbreak>
+        </rule>
+      </languagerule>
+
+      <!-- ═══════════════════════════════ ARABIC ═══════════════════════════════ -->
+      <languagerule languagerulename="Arabic">
+        <rule break="yes">
+          <beforebreak>[۔؟!]</beforebreak>
+          <afterbreak>\s*\p{L}</afterbreak>
+        </rule>
+        <rule break="yes">
+          <beforebreak>[\.\?!]+</beforebreak>
+          <afterbreak>\s+\p{L}</afterbreak>
+        </rule>
+      </languagerule>
+
+      <!-- ══════════════════════════════ FRENCH ══════════════════════════════ -->
+      <languagerule languagerulename="French">
+        <rule break="no">
+          <beforebreak>\b(?:M|Mme|Mlle|MM|Dr|Prof|Me|St|Ste|etc|ex|cf|fig|vol|no|art|chap|env|réf|tél)\.</beforebreak>
+          <afterbreak>\s</afterbreak>
+        </rule>
+        <rule break="no">
+          <beforebreak>\b[A-Z]\.</beforebreak>
+          <afterbreak>\s+[A-Z]</afterbreak>
+        </rule>
+        <rule break="yes">
+          <beforebreak>[\.\?!]+</beforebreak>
+          <afterbreak>\s+\p{Lu}</afterbreak>
+        </rule>
+      </languagerule>
+
+      <!-- ══════════════════════════════ GERMAN ══════════════════════════════ -->
+      <languagerule languagerulename="German">
+        <rule break="no">
+          <beforebreak>\b(?:Dr|Prof|Hr|Fr|St|Str|Abs|Nr|bzw|usw|etc|ggf|inkl|exkl|max|min|ca|evtl|bzgl|sog|vgl|Abb|Tab|Kap|Jh)\.</beforebreak>
+          <afterbreak>\s</afterbreak>
+        </rule>
+        <rule break="no">
+          <beforebreak>\b[A-Z]\.</beforebreak>
+          <afterbreak>\s+[A-Z]</afterbreak>
+        </rule>
+        <rule break="yes">
+          <beforebreak>[\.\?!]+</beforebreak>
+          <afterbreak>\s+\p{Lu}</afterbreak>
+        </rule>
+      </languagerule>
+
+      <!-- ═════════════════════════════ SPANISH ═════════════════════════════ -->
+      <languagerule languagerulename="Spanish">
+        <rule break="no">
+          <beforebreak>\b(?:Sr|Sra|Dr|Dra|Prof|Lic|etc|pág|vol|núm|art|cap|fig|ap)\.</beforebreak>
+          <afterbreak>\s</afterbreak>
+        </rule>
+        <rule break="no">
+          <beforebreak>\b[A-Z]\.</beforebreak>
+          <afterbreak>\s+[A-Z]</afterbreak>
+        </rule>
+        <!-- Spanish uses ¡/¿ as openers; sentence ends with ! or ? -->
+        <rule break="yes">
+          <beforebreak>[\.\?!]+</beforebreak>
+          <afterbreak>\s+\p{Lu}</afterbreak>
+        </rule>
+      </languagerule>
+
+      <!-- ══════════════════════════ CHINESE / JAPANESE ══════════════════════════ -->
+      <!--
+        CJK sentence-ending marks:
+          U+3002  。  IDEOGRAPHIC FULL STOP
+          U+FF01  ！  FULLWIDTH EXCLAMATION MARK
+          U+FF1F  ？  FULLWIDTH QUESTION MARK
+          U+2026  …   HORIZONTAL ELLIPSIS
+        CJK text does not use spaces between words, so afterBreak is empty
+        (break immediately after the punctuation).
+      -->
+      <languagerule languagerulename="ChineseJapanese">
+        <rule break="yes">
+          <beforebreak>[。！？…]+</beforebreak>
+          <afterbreak></afterbreak>
+        </rule>
+      </languagerule>
+
+      <!-- ══════════════════════════════ DEFAULT ══════════════════════════════ -->
+      <languagerule languagerulename="Default">
+        <rule break="yes">
+          <beforebreak>[\.\?!]+</beforebreak>
+          <afterbreak>\s+\p{Lu}</afterbreak>
+        </rule>
+      </languagerule>
+
+    </languagerules>
+    <maprules>
+      <languagemap languagepattern="EN.*" languagerulename="English"/>
+      <languagemap languagepattern="HI.*" languagerulename="Hindi"/>
+      <languagemap languagepattern="UR.*" languagerulename="Urdu"/>
+      <languagemap languagepattern="AR.*" languagerulename="Arabic"/>
+      <languagemap languagepattern="FR.*" languagerulename="French"/>
+      <languagemap languagepattern="DE.*" languagerulename="German"/>
+      <languagemap languagepattern="ES.*" languagerulename="Spanish"/>
+      <languagemap languagepattern="ZH.*" languagerulename="ChineseJapanese"/>
+      <languagemap languagepattern="JA.*" languagerulename="ChineseJapanese"/>
+      <!-- Catch-all: must be last -->
+      <languagemap languagepattern=".*"   languagerulename="Default"/>
+    </maprules>
+  </body>
+</srx>
