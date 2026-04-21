@@ -1,0 +1,38 @@
+{
+    "name": "catframework/translation-memory",
+    "description": "SQLite-backed translation memory with fuzzy matching for the CAT Framework",
+    "type": "library",
+    "version": "0.1.0",
+    "require": {
+        "php": "^8.2",
+        "ext-pdo": "*",
+        "ext-pdo_sqlite": "*",
+        "ext-intl": "*",
+        "ext-mbstring": "*",
+        "catframework/core": "^0.1",
+        "catframework/tmx": "^0.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "CatFramework\\TranslationMemory\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "CatFramework\\TranslationMemory\\Tests\\": "tests/"
+        }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../core"
+        },
+        {
+            "type": "path",
+            "url": "../tmx"
+        }
+    ]
+}
