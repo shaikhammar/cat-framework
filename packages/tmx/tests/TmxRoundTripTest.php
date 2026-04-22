@@ -36,7 +36,6 @@ class TmxRoundTripTest extends TestCase
     public function test_plain_text_round_trip(): void
     {
         $unit = $this->makeUnit('Hello world.', 'Bonjour le monde.');
-
         [$result] = $this->writeAndRead([$unit]);
 
         $this->assertSame('Hello world.',      $result->source->getPlainText());
@@ -317,25 +316,25 @@ class TmxRoundTripTest extends TestCase
         array $metadata     = [],
     ): TranslationUnit {
         return new TranslationUnit(
-            source:         new Segment('src-' . uniqid(), [$sourceText]),
-            target:         new Segment('tgt-' . uniqid(), [$targetText]),
+            source: new Segment('src-' . uniqid(), [$sourceText]),
+            target: new Segment('tgt-' . uniqid(), [$targetText]),
             sourceLanguage: $sourceLang,
             targetLanguage: $targetLang,
-            createdAt:      $createdAt ?? new \DateTimeImmutable('now', new \DateTimeZone('UTC')),
-            lastUsedAt:     $lastUsedAt,
-            createdBy:      $createdBy,
-            metadata:       $metadata,
+            createdAt: $createdAt ?? new \DateTimeImmutable('now', new \DateTimeZone('UTC')),
+            lastUsedAt: $lastUsedAt,
+            createdBy: $createdBy,
+            metadata: $metadata,
         );
     }
 
     private function makeUnitWithElements(array $sourceElements, array $targetElements): TranslationUnit
     {
         return new TranslationUnit(
-            source:         new Segment('src-' . uniqid(), $sourceElements),
-            target:         new Segment('tgt-' . uniqid(), $targetElements),
+            source: new Segment('src-' . uniqid(), $sourceElements),
+            target: new Segment('tgt-' . uniqid(), $targetElements),
             sourceLanguage: 'en-US',
             targetLanguage: 'fr-FR',
-            createdAt:      new \DateTimeImmutable('now', new \DateTimeZone('UTC')),
+            createdAt: new \DateTimeImmutable('now', new \DateTimeZone('UTC')),
         );
     }
 

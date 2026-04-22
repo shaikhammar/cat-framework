@@ -1,0 +1,57 @@
+<?php
+
+declare(strict_types=1);
+
+namespace CatFramework\Qa;
+
+use CatFramework\Core\Contract\QualityCheckInterface;
+use CatFramework\Core\Model\BilingualDocument;
+use CatFramework\Core\Model\QualityIssue;
+use CatFramework\Core\Model\SegmentPair;
+
+final class QualityRunner
+{
+    /** @var QualityCheckInterface[] */
+    private array $checks = [];
+
+    public function register(QualityCheckInterface $check): void
+    {
+        $this->checks[] = $check;
+    }
+
+    /**
+     * Run all registered checks against every segment pair in the document.
+     *
+     * @return QualityIssue[]
+     */
+    public function run(BilingualDocument $document): array
+    {
+        $issues = [];
+
+        foreach ($document->getSegmentPairs() as $pair) {
+            foreach ($this->runOnPair($pair, $document->sourceLanguage, $document->targetLanguage) as $issue) {
+                $issues[] = $issue;
+            }
+        }
+
+        return $issues;
+    }
+
+    /**
+     * Run all registered checks against a single segment pair.
+     *
+     * @return QualityIssue[]
+     */
+    public function runOnPair(SegmentPair $pair, string $sourceLanguage, string $targetLanguage): array
+    {
+        $issues = [];
+
+        foreach ($this->checks as $check) {
+            foreach ($check->check($pair, $sourceLanguage, $targetLanguage) as $issue) {
+                $issues[] = $issue;
+            }
+        }
+
+        return $issues;
+    }
+}
