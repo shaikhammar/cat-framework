@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE martif SYSTEM "TBXcoreStructV02.dtd">
+<martif type="TBX" xml:lang="en">
+  <martifHeader>
+    <fileDesc>
+      <titleStmt><title>Sample Termbase</title></titleStmt>
+    </fileDesc>
+  </martifHeader>
+  <text>
+    <body>
+
+      <!-- Standard entry: approved term -->
+      <termEntry id="c1">
+        <langSet xml:lang="en">
+          <tig>
+            <term>translation memory</term>
+            <termNote type="administrativeStatus">preferredTerm</termNote>
+            <descrip type="definition">A database of previously translated segments.</descrip>
+            <descrip type="subjectField">localization</descrip>
+          </tig>
+        </langSet>
+        <langSet xml:lang="fr">
+          <tig>
+            <term>mémoire de traduction</term>
+          </tig>
+        </langSet>
+      </termEntry>
+
+      <!-- Deprecated (forbidden) term -->
+      <termEntry id="c2">
+        <langSet xml:lang="en">
+          <tig>
+            <term>TM</term>
+            <termNote type="administrativeStatus">deprecatedTerm</termNote>
+          </tig>
+        </langSet>
+        <langSet xml:lang="fr">
+          <tig>
+            <term>MT</term>
+          </tig>
+        </langSet>
+      </termEntry>
+
+      <!-- Hindi source term -->
+      <termEntry id="c3">
+        <langSet xml:lang="hi">
+          <tig>
+            <term>अनुवाद स्मृति</term>
+          </tig>
+        </langSet>
+        <langSet xml:lang="en">
+          <tig>
+            <term>translation memory</term>
+          </tig>
+        </langSet>
+      </termEntry>
+
+    </body>
+  </text>
+</martif>

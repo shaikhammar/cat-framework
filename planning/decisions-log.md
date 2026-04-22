@@ -127,3 +127,13 @@ Decisions locked in during planning phase. Reference these before implementation
 **Affects:** filter-docx
 **Decision:** Extract text inside `<w:ins>` (visible insertions). Ignore text inside `<w:del>` (deleted text). Ignore `<w:rPrChange>` (formatting change tracking). On rebuild, produce plain runs with no tracked change markup. This is standard CAT tool behavior (equivalent to "accept all changes" before translation).
 **Revisit when:** Users need to preserve tracked changes through translation (e.g., legal documents where revision history is contractually required). Upgrade path: extract both inserted and deleted text as separate segment types (flagged in SegmentPair context), translate both, reconstruct `<w:ins>`/`<w:del>` markup on rebuild with original author/date attributes preserved from skeleton. This is a significant feature (~2-3 sessions) and may require a new SegmentPair property to distinguish insert/delete/current text.
+
+---
+
+## D15: Arabic/Urdu clitic handling in terminology recognition
+
+**Status:** Accepted
+**Affects:** terminology
+**Decision:** `SqliteTerminologyProvider::recognize()` uses strict word-boundary detection only (space/punctuation adjacent to match). No clitic prefix stripping is attempted. Arabic clitics (بـ ، الـ ، وـ ، فـ ، كـ ، للـ) that are written attached to a term (e.g., والترجمة for "and the translation") will not produce a match against the term ترجمة.
+**Rationale:** Neither Okapi nor translate-toolkit solve this natively either — both delegate to external tools (Farasa, CAMeL Tools) for Arabic morphology. Those tools are Python-only, making them unsuitable as a dependency in this PHP library. A pure-PHP alternative (variant pre-generation at import time) would work but adds complexity that isn't justified until real termbase usage reveals how often clitic-attached matches are actually missed.
+**Revisit when:** Users report missed terminology hits on Arabic/Urdu content where clitics are common. Upgrade path: at `addEntry()` and `import()` time, generate prefixed variants of each source term (for Arabic/Urdu language pairs only) and store them as additional rows marked `is_variant = 1`. The `recognize()` scan then hits these rows naturally with no change to the matching loop. Variants are excluded from `lookup()` results and not exported. Prefix list to generate: بـ ، الـ ، وـ ، فـ ، فالـ ، وال ، كـ ، للـ ، بالـ. No external dictionary validation needed — the termbase itself is the lexicon.
