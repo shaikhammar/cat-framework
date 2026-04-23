@@ -11,6 +11,8 @@ use CatFramework\Core\Model\BilingualDocument;
 use CatFramework\Core\Model\InlineCode;
 use CatFramework\Core\Model\Segment;
 use CatFramework\Core\Model\SegmentPair;
+use CatFramework\Core\Util\MergedRun;
+use CatFramework\Core\Util\OoxmlRunMerger;
 use DOMDocument;
 use DOMElement;
 use DOMXPath;
@@ -77,16 +79,17 @@ class DocxFilter implements FileFilterInterface
             $itemsToProcess  = [];
 
             foreach ($paragraphs as $para) {
-                $mergedRuns = $this->extractAndMergeRuns($para, $xpath, $dom);
-                if (!empty($mergedRuns)) {
+                $rawRuns = $this->extractRuns($para, $xpath, $dom);
+                if (!empty($rawRuns)) {
+                    $mergedRuns = OoxmlRunMerger::merge($rawRuns);
                     $itemsToProcess[] = ['para' => $para, 'runs' => $mergedRuns];
                 }
             }
 
             foreach ($itemsToProcess as $item) {
                 $placeholder = sprintf('{{SEG:%03d}}', $seqNo);
-                $baseRpr     = $this->findBaseRpr($item['runs']);
-                $elements    = $this->buildSegmentElements($item['runs'], $baseRpr);
+                $baseRpr     = OoxmlRunMerger::findBaseRpr($item['runs']);
+                $elements    = OoxmlRunMerger::buildSegmentElements($item['runs'], $baseRpr);
 
                 $this->replaceParagraphWithPlaceholder($item['para'], $dom, $placeholder);
 
@@ -226,21 +229,18 @@ class DocxFilter implements FileFilterInterface
     }
 
     /**
-     * Extracts text runs from a <w:p> element, merges adjacent runs with
-     * identical formatting, and returns an empty array for paragraphs with
-     * no meaningful text (empty, whitespace-only, or non-text content).
+     * Extracts raw text runs from a <w:p> element. Returns an empty array for
+     * paragraphs with no meaningful text. Merging is handled by OoxmlRunMerger.
      *
      * @return MergedRun[]
      */
-    private function extractAndMergeRuns(DOMElement $para, DOMXPath $xpath, DOMDocument $dom): array
+    private function extractRuns(DOMElement $para, DOMXPath $xpath, DOMDocument $dom): array
     {
         $rawRuns = [];
 
         foreach (iterator_to_array($xpath->query('.//w:r', $para)) as $run) {
             $tNodes = $xpath->query('w:t', $run);
             if ($tNodes->length === 0) {
-                // Run has no <w:t> (e.g., contains only <w:br/>, <w:tab/>).
-                // Phase 2: skip special-element-only runs.
                 continue;
             }
 
@@ -268,79 +268,7 @@ class DocxFilter implements FileFilterInterface
             return [];
         }
 
-        return $this->mergeAdjacentRuns($rawRuns);
-    }
-
-    /**
-     * Collapses adjacent MergedRuns that share the same rPrXml into one run.
-     * This eliminates Word's run fragmentation artefacts.
-     *
-     * @param  MergedRun[] $rawRuns Non-empty.
-     * @return MergedRun[]
-     */
-    private function mergeAdjacentRuns(array $rawRuns): array
-    {
-        $merged  = [];
-        $current = $rawRuns[0];
-
-        for ($i = 1; $i < count($rawRuns); $i++) {
-            if ($rawRuns[$i]->rPrXml === $current->rPrXml) {
-                $current = new MergedRun($current->rPrXml, $current->text . $rawRuns[$i]->text);
-            } else {
-                $merged[] = $current;
-                $current  = $rawRuns[$i];
-            }
-        }
-        $merged[] = $current;
-
-        return $merged;
-    }
-
-    /**
-     * Returns the rPrXml string used by the greatest total character count.
-     * This becomes the "base" formatting — text with base formatting is stored
-     * as plain strings in the Segment; other formatting becomes InlineCode pairs.
-     *
-     * @param MergedRun[] $mergedRuns Non-empty.
-     */
-    private function findBaseRpr(array $mergedRuns): string
-    {
-        $lengths = [];
-        foreach ($mergedRuns as $run) {
-            $lengths[$run->rPrXml] = ($lengths[$run->rPrXml] ?? 0) + mb_strlen($run->text);
-        }
-        arsort($lengths);
-
-        return (string) array_key_first($lengths);
-    }
-
-    /**
-     * Converts merged runs into the mixed string / InlineCode array that
-     * becomes the source Segment's content.
-     *
-     * Runs whose rPrXml matches $baseRpr emit plain strings.
-     * All other runs are wrapped in OPENING / CLOSING InlineCode pairs.
-     *
-     * @param  MergedRun[] $mergedRuns
-     * @return array<string|InlineCode>
-     */
-    private function buildSegmentElements(array $mergedRuns, string $baseRpr): array
-    {
-        $elements = [];
-        $codeId   = 1;
-
-        foreach ($mergedRuns as $run) {
-            if ($run->rPrXml === $baseRpr) {
-                $elements[] = $run->text;
-            } else {
-                $id         = (string) $codeId++;
-                $elements[] = new InlineCode(id: $id, type: InlineCodeType::OPENING, data: $run->rPrXml, displayText: '{' . $id . '}');
-                $elements[] = $run->text;
-                $elements[] = new InlineCode(id: $id, type: InlineCodeType::CLOSING, data: $run->rPrXml, displayText: '{/' . $id . '}');
-            }
-        }
-
-        return $elements;
+        return $rawRuns;
     }
 
     /**
@@ -392,34 +320,8 @@ class DocxFilter implements FileFilterInterface
      */
     private function buildRunsFromSegment(Segment $segment, string $baseRpr, DOMDocument $dom): array
     {
-        $currentRpr = $baseRpr;
-        $buffer     = '';
-        $runs       = [];
-
-        foreach ($segment->getElements() as $element) {
-            if (is_string($element)) {
-                $buffer .= $element;
-                continue;
-            }
-
-            // Flush any accumulated text before a formatting boundary.
-            if ($buffer !== '') {
-                $runs[] = $this->createRun($dom, $buffer, $currentRpr);
-                $buffer = '';
-            }
-
-            match ($element->type) {
-                InlineCodeType::OPENING    => $currentRpr = $element->data,
-                InlineCodeType::CLOSING    => $currentRpr = $baseRpr,
-                InlineCodeType::STANDALONE => null, // Phase 2: skip standalone codes
-            };
-        }
-
-        if ($buffer !== '') {
-            $runs[] = $this->createRun($dom, $buffer, $currentRpr);
-        }
-
-        return $runs;
+        $mergedRuns = OoxmlRunMerger::segmentToRuns($segment, $baseRpr);
+        return array_map(fn(MergedRun $r) => $this->createRun($dom, $r->text, $r->rPrXml), $mergedRuns);
     }
 
     /**
