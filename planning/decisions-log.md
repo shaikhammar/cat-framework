@@ -137,3 +137,52 @@ Decisions locked in during planning phase. Reference these before implementation
 **Decision:** `SqliteTerminologyProvider::recognize()` uses strict word-boundary detection only (space/punctuation adjacent to match). No clitic prefix stripping is attempted. Arabic clitics (بـ ، الـ ، وـ ، فـ ، كـ ، للـ) that are written attached to a term (e.g., والترجمة for "and the translation") will not produce a match against the term ترجمة.
 **Rationale:** Neither Okapi nor translate-toolkit solve this natively either — both delegate to external tools (Farasa, CAMeL Tools) for Arabic morphology. Those tools are Python-only, making them unsuitable as a dependency in this PHP library. A pure-PHP alternative (variant pre-generation at import time) would work but adds complexity that isn't justified until real termbase usage reveals how often clitic-attached matches are actually missed.
 **Revisit when:** Users report missed terminology hits on Arabic/Urdu content where clitics are common. Upgrade path: at `addEntry()` and `import()` time, generate prefixed variants of each source term (for Arabic/Urdu language pairs only) and store them as additional rows marked `is_variant = 1`. The `recognize()` scan then hits these rows naturally with no change to the matching loop. Variants are excluded from `lookup()` results and not exported. Prefix list to generate: بـ ، الـ ، وـ ، فـ ، فالـ ، وال ، كـ ، للـ ، بالـ. No external dictionary validation needed — the termbase itself is the lexicon.
+
+---
+
+# Phase 3 Decisions
+
+---
+
+## D16: PSR-18 HTTP client injection for MT adapters
+
+**Status:** Accepted
+**Affects:** mt
+**Decision:** MT adapters accept a `Psr\Http\Client\ClientInterface`, `Psr\Http\Message\RequestFactoryInterface`, and `Psr\Http\Message\StreamFactoryInterface` via constructor injection. The `catframework/mt` package requires `psr/http-client`, `psr/http-factory`, and `psr/http-message` (all interface packages, zero transitive deps). No concrete HTTP client is bundled or auto-discovered. A `suggest` block in `composer.json` points to `guzzlehttp/guzzle` and `symfony/http-client`. Each adapter ships a static `create(string $apiKey, ?ClientInterface $client = null): self` factory that optionally auto-detects a commonly installed client if none is injected, but throws a descriptive `RuntimeException` if no client is available.
+**Rationale:** Keeps the framework dependency-free. Users in Laravel already have Guzzle; Symfony users already have Symfony HTTP Client. Forcing either on the other is hostile.
+
+---
+
+## D17: DeepL XML tag mode for InlineCode preservation
+
+**Status:** Accepted
+**Affects:** mt (DeepLAdapter)
+**Decision:** Convert each InlineCode to `<x id="{N}"/>` XML placeholder before sending to DeepL. Send with `tag_handling=xml&ignore_tags=x`. Wrap the entire source string in `<seg>...</seg>` and build the XML string via `DOMDocument` (never string concatenation) to handle `&`, `<`, `>` in source text. Parse the response via `DOMDocument::loadXML()`. After decoding, compare sent vs. received placeholder IDs. If any are missing, annotate the returned Segment with `metadata["mt_tag_loss"] = [missingIds]`. Do not throw; return the degraded Segment with a warning.
+**Rationale:** DeepL's XML mode is the most reliable tag-preservation mechanism available in any MT API. The encode/decode symmetry bug with unescaped XML characters is the primary failure mode — DOM construction eliminates it.
+
+---
+
+## D18: Google Translate strips InlineCodes
+
+**Status:** Accepted
+**Affects:** mt (GoogleTranslateAdapter)
+**Decision:** Google Cloud Translation API v3 does not reliably preserve arbitrary XML tags even in `text/html` mode. Send plain text only (`mimeType: "text/plain"`). Strip all InlineCodes from the source Segment before sending. Return a Segment containing only the translated plain text with no InlineCodes. Document this limitation explicitly in the adapter's class docblock and in the package README. The QA `tag_consistency` check will flag missing codes as ERROR, prompting the translator to re-insert them.
+**Rationale:** Incorrect tag positions in translated output (which HTML mode can produce) are worse than no tags at all. Missing tags are detectable by QA; misplaced tags are not.
+
+---
+
+## D19: XLSX shared strings — one SegmentPair per unique `<si>` index
+
+**Status:** Accepted
+**Affects:** filter-xlsx
+**Decision:** Produce exactly one SegmentPair per unique shared string index that is referenced by at least one cell. Do not produce one SegmentPair per cell. Iterate `xl/sharedStrings.xml` to produce segments (not worksheet cells). Build a set of "referenced indices" by scanning all worksheets first. Skip unreferenced indices. On rebuild, replace the `<si>` in the skeleton's `sharedStrings.xml` — all cells referencing that index automatically get the same translated string. Delete `xl/calcChain.xml` from the rebuilt ZIP; Excel regenerates it on next open.
+**Rationale:** Deduplication is correct behavior — if the source file had the same string in 50 cells, it should have the same translation in 50 cells. Producing 50 duplicate SegmentPairs would be confusing and wasteful.
+
+---
+
+## D20: PPTX extraction scope — slides and notes only, skip masters/layouts
+
+**Status:** Accepted
+**Affects:** filter-pptx
+**Decision:** Extract translatable text from `ppt/slides/slide{N}.xml` and `ppt/notesSlides/notesSlide{N}.xml` only. Skip `ppt/slideMasters/`, `ppt/slideLayouts/`, `ppt/theme/`, and hidden slides (`show="0"` in presentation.xml). Apply the same explicit-only `<a:rPr>` comparison as D9 (no cascade resolution). Use the same run-merging and InlineCode generation logic as DocxFilter. If run-merging logic is duplicated across DocxFilter and PptxFilter, extract it to `CatFramework\Core\Util\OoxmlRunMerger` in `catframework/core` during the filter-xlsx implementation session.
+**Rationale:** Masters and layouts are design templates, not translatable content for a specific presentation. Translating them would propagate changes to all slides sharing that master, which is not what a translator intends. Hidden slides are excluded by default because they may be draft content not intended for translation.
