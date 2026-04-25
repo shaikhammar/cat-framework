@@ -208,4 +208,10 @@ final class ProjectLoaderTest extends TestCase
         $result = ProjectLoader::resolvePath('/projects/myproject', '/absolute/path/tm.db');
         $this->assertSame('/absolute/path/tm.db', $result);
     }
+
+    public function test_resolve_path_returns_windows_drive_path_unchanged(): void
+    {
+        $result = ProjectLoader::resolvePath('/projects/myproject', 'C:/archive/tm.db');
+        $this->assertSame('C:/archive/tm.db', $result);
+    }
 }
