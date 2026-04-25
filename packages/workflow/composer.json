@@ -1,0 +1,49 @@
+{
+    "name": "catframework/workflow",
+    "description": "Pipeline orchestration for the CAT Framework — wires filter, segmentation, TM, MT, QA, and XLIFF into a single WorkflowRunner",
+    "type": "library",
+    "license": "MIT",
+    "version": "0.1.0",
+    "require": {
+        "php": "^8.2",
+        "ext-zip": "*",
+        "catframework/core": "^0.1",
+        "catframework/mt": "^0.1",
+        "catframework/project": "^0.1",
+        "catframework/qa": "^0.1",
+        "catframework/segmentation": "^0.1",
+        "catframework/terminology": "^0.1",
+        "catframework/translation-memory": "^0.1",
+        "catframework/xliff": "^0.1"
+    },
+    "require-dev": {
+        "catframework/filter-plaintext": "^0.1",
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "CatFramework\\Workflow\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "CatFramework\\Workflow\\Tests\\": "tests/"
+        }
+    },
+    "repositories": [
+        {"type": "path", "url": "../core"},
+        {"type": "path", "url": "../filter-plaintext"},
+        {"type": "path", "url": "../mt"},
+        {"type": "path", "url": "../project"},
+        {"type": "path", "url": "../qa"},
+        {"type": "path", "url": "../segmentation"},
+        {"type": "path", "url": "../srx"},
+        {"type": "path", "url": "../terminology"},
+        {"type": "path", "url": "../tmx"},
+        {"type": "path", "url": "../translation-memory"},
+        {"type": "path", "url": "../xliff"}
+    ],
+    "config": {
+        "sort-packages": true
+    }
+}

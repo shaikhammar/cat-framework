@@ -2,6 +2,7 @@
     "name": "catframework/segmentation",
     "description": "SRX-based sentence segmentation engine for the CAT Framework",
     "type": "library",
+    "version": "0.1.0",
     "require": {
         "php": "^8.2",
         "ext-mbstring": "*",
