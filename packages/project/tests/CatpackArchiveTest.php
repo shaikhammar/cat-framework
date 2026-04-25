@@ -7,7 +7,6 @@ namespace CatFramework\Project\Tests;
 use CatFramework\Project\CatpackArchive;
 use CatFramework\Project\Exception\ManifestException;
 use CatFramework\Project\Model\FilterConfig;
-use CatFramework\Project\Model\GlossaryConfig;
 use CatFramework\Project\Model\MtConfig;
 use CatFramework\Project\Model\ProjectManifest;
 use CatFramework\Project\Model\QaConfig;

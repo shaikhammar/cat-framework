@@ -18,7 +18,12 @@ final class CatpackArchive
     public static function create(string $outputPath, ProjectManifest $manifest): self
     {
         $zip = new ZipArchive();
-        $zip->open($outputPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        $result = $zip->open($outputPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        if ($result !== true) {
+            throw new ManifestException(
+                "Cannot create catpack at '{$outputPath}' (ZipArchive error {$result})"
+            );
+        }
         $zip->addFromString('catproject.json', self::manifestToJson($manifest));
 
         return new self($zip, $manifest);
@@ -44,7 +49,12 @@ final class CatpackArchive
             throw new ManifestException("Invalid catproject.json in archive: {$catpackPath}");
         }
 
-        $manifest = ProjectLoader::parseArray($data, dirname($catpackPath));
+        try {
+            $manifest = ProjectLoader::parseArray($data, dirname($catpackPath));
+        } catch (\Throwable $e) {
+            $zip->close();
+            throw $e;
+        }
 
         return new self($zip, $manifest);
     }
