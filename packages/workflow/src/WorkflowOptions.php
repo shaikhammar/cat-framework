@@ -34,6 +34,13 @@ final class WorkflowOptions
      */
     public ?string $qaFailOnSeverity = null;
 
+    /**
+     * Automatically store each translated segment pair back into the TM after processing.
+     * Useful for bulk-importing existing bilingual files or propagating MT output into TM.
+     * Only pairs that have a target segment are stored.
+     */
+    public bool $autoWriteToTm = false;
+
     public static function defaults(): self
     {
         return new self();

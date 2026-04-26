@@ -17,6 +17,8 @@ use CatFramework\Core\Model\QualityIssue;
 use CatFramework\Core\Model\Segment;
 use CatFramework\Core\Model\SegmentPair;
 use CatFramework\Core\Model\TranslationUnit;
+use CatFramework\Project\Store\InMemorySegmentStore;
+use CatFramework\Project\Store\SkeletonStoreInterface;
 use CatFramework\Qa\QualityRunner;
 use CatFramework\Qa\Check\EmptyTranslationCheck;
 use CatFramework\Segmentation\SrxSegmentationEngine;
@@ -356,8 +358,122 @@ final class WorkflowRunnerTest extends TestCase
 
         $result = $runner->process('/tmp/test.txt', 'fr-FR');
 
-        foreach (['extract', 'segment', 'tm', 'terminology', 'mt', 'qa', 'xliff'] as $key) {
+        foreach (['extract', 'segment', 'tm', 'terminology', 'mt', 'qa', 'xliff', 'store'] as $key) {
             $this->assertArrayHasKey($key, $result->timings, "Missing timing key: {$key}");
         }
+    }
+
+    public function test_store_file_id_is_null_when_no_store_configured(): void
+    {
+        $doc    = $this->makeDoc(['Hello']);
+        $runner = $this->makeRunner($this->makeRegistry($this->makeFilter($doc)));
+
+        $result = $runner->process('/tmp/test.txt', 'fr-FR');
+
+        $this->assertNull($result->storeFileId);
+    }
+
+    public function test_segment_store_receives_each_segment_and_file_id_returned(): void
+    {
+        $doc  = $this->makeDoc(['First', 'Second', 'Third']);
+        $store = new InMemorySegmentStore();
+
+        $options              = WorkflowOptions::defaults();
+        $options->writeXliff  = false;
+
+        $runner = new WorkflowRunner(
+            fileFilterRegistry: $this->makeRegistry($this->makeFilter($doc)),
+            segmentationEngine: new SrxSegmentationEngine(),
+            xliffWriter: new XliffWriter(),
+            sourceLang: 'en-US',
+            options: $options,
+            segmentStore: $store,
+        );
+
+        $result = $runner->process('/tmp/test.txt', 'fr-FR');
+
+        $this->assertNotNull($result->storeFileId);
+        $this->assertSame(3, $store->countSegments($result->storeFileId));
+    }
+
+    public function test_skeleton_store_receives_skeleton_bytes(): void
+    {
+        $doc  = $this->makeDoc(['Hello']);
+        $stored = [];
+
+        $skeletonStore = new class($stored) implements SkeletonStoreInterface {
+            public function __construct(private array &$stored) {}
+            public function store(string $fileId, string $format, string $skeletonBytes): string
+            {
+                $this->stored[] = ['fileId' => $fileId, 'bytes' => $skeletonBytes];
+                return $fileId;
+            }
+            public function retrieve(string $handle): string { return ''; }
+            public function delete(string $handle): void {}
+        };
+
+        $options              = WorkflowOptions::defaults();
+        $options->writeXliff  = false;
+
+        $runner = new WorkflowRunner(
+            fileFilterRegistry: $this->makeRegistry($this->makeFilter($doc)),
+            segmentationEngine: new SrxSegmentationEngine(),
+            xliffWriter: new XliffWriter(),
+            sourceLang: 'en-US',
+            options: $options,
+            skeletonStore: $skeletonStore,
+        );
+
+        $result = $runner->process('/tmp/test.txt', 'fr-FR');
+
+        $this->assertCount(1, $stored);
+        $this->assertSame($result->storeFileId, $stored[0]['fileId']);
+        $this->assertJson($stored[0]['bytes']);
+    }
+
+    public function test_auto_write_to_tm_stores_translated_pairs(): void
+    {
+        $doc = $this->makeDoc(['Hello world']);
+        $stored = [];
+
+        $capturingTm = new class($stored) implements TranslationMemoryInterface {
+            public function __construct(private array &$stored) {}
+            public function lookup(Segment $source, string $sourceLanguage, string $targetLanguage, float $minScore = 0.7, int $maxResults = 5): array
+            {
+                return [new MatchResult(
+                    translationUnit: new TranslationUnit(
+                        source: $source,
+                        target: new Segment('t1', ['Bonjour monde']),
+                        sourceLanguage: $sourceLanguage,
+                        targetLanguage: $targetLanguage,
+                        createdAt: new \DateTimeImmutable(),
+                    ),
+                    score: 1.0,
+                    type: MatchType::EXACT,
+                )];
+            }
+            public function store(TranslationUnit $unit): void { $this->stored[] = $unit; }
+            public function import(string $tmxFilePath): int { return 0; }
+            public function export(string $tmxFilePath): int { return 0; }
+        };
+
+        $options               = WorkflowOptions::defaults();
+        $options->writeXliff   = false;
+        $options->autoWriteToTm = true;
+
+        $runner = new WorkflowRunner(
+            fileFilterRegistry: $this->makeRegistry($this->makeFilter($doc)),
+            segmentationEngine: new SrxSegmentationEngine(),
+            xliffWriter: new XliffWriter(),
+            sourceLang: 'en-US',
+            translationMemory: $capturingTm,
+            options: $options,
+        );
+
+        $runner->process('/tmp/test.txt', 'fr-FR');
+
+        $this->assertCount(1, $stored);
+        $this->assertSame('Hello world', $stored[0]->source->getPlainText());
+        $this->assertSame('Bonjour monde', $stored[0]->target->getPlainText());
     }
 }

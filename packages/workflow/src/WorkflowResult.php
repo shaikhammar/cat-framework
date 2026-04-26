@@ -14,7 +14,8 @@ final class WorkflowResult
         /** @var QualityIssue[] */
         public readonly array $qaIssues,
         public readonly TmMatchStats $matchStats,
-        public readonly ?string $xliffPath,   // null when writeXliff = false
-        public readonly array $timings,       // keys: 'extract','segment','tm','terminology','mt','qa','xliff'
+        public readonly ?string $xliffPath,    // null when writeXliff = false
+        public readonly array $timings,        // keys: 'extract','segment','tm','terminology','mt','qa','xliff','store'
+        public readonly ?string $storeFileId,  // null when no SegmentStore is configured
     ) {}
 }
