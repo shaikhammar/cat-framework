@@ -6,7 +6,6 @@
     "version": "0.1.0",
     "require": {
         "php": "^8.2",
-        "ext-zip": "*",
         "catframework/core": "^0.1",
         "catframework/mt": "^0.1",
         "catframework/project": "^0.1",

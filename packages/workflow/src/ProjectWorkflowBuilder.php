@@ -6,6 +6,7 @@ namespace CatFramework\Workflow;
 
 use CatFramework\Core\Contract\MachineTranslationInterface;
 use CatFramework\Core\Contract\TerminologyProviderInterface;
+use CatFramework\Mt\DeepL\DeepLAdapter;
 use CatFramework\Project\Model\ProjectManifest;
 use CatFramework\Qa\Check\DoubleSpaceCheck;
 use CatFramework\Qa\Check\EmptyTranslationCheck;
@@ -20,6 +21,8 @@ use CatFramework\Terminology\Provider\SqliteTerminologyProvider;
 use CatFramework\TranslationMemory\SqliteTranslationMemory;
 use CatFramework\Workflow\Exception\WorkflowException;
 use CatFramework\Xliff\XliffWriter;
+use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\Psr7\HttpFactory as GuzzleHttpFactory;
 use PDO;
 
 final class ProjectWorkflowBuilder
@@ -88,16 +91,16 @@ final class ProjectWorkflowBuilder
             );
         }
 
-        if (!class_exists(\GuzzleHttp\Client::class)) {
+        if (!class_exists(GuzzleClient::class)) {
             throw new WorkflowException(
                 "HTTP client required for MT — install guzzlehttp/guzzle"
             );
         }
 
-        $httpClient  = new \GuzzleHttp\Client();
-        $httpFactory = new \GuzzleHttp\Psr7\HttpFactory();
+        $httpClient  = new GuzzleClient();
+        $httpFactory = new GuzzleHttpFactory();
 
-        return new \CatFramework\Mt\DeepL\DeepLAdapter(
+        return new DeepLAdapter(
             $httpClient,
             $httpFactory,
             $httpFactory,
