@@ -52,6 +52,34 @@ No code yet.
 
 
 
+\## Tool Paths (Laravel Herd — do NOT search, trust these)
+
+PHP and Composer are managed by Laravel Herd. Use these exact paths — no need to run `where php` or probe the system.
+
+**PHP 8.3** (default for this project — targets ^8.2):
+\- Windows: `C:/Users/shaik/.config/herd/bin/php83/php.exe`
+\- Git Bash: `/c/Users/shaik/.config/herd/bin/php83/php.exe`
+
+**PHP 8.4** (available if needed):
+\- Windows: `C:/Users/shaik/.config/herd/bin/php84/php.exe`
+\- Git Bash: `/c/Users/shaik/.config/herd/bin/php84/php.exe`
+
+**Composer**:
+\- Windows: `C:/Users/shaik/.config/herd/bin/composer.bat`
+\- Git Bash: `/c/Users/shaik/.config/herd/bin/composer.bat`
+\- Alternative (phar): `C:/Users/shaik/.config/herd/bin/php83/php.exe C:/Users/shaik/.config/herd/bin/composer.phar`
+
+**Canonical one-liners for bash commands:**
+```
+PHP="C:/Users/shaik/.config/herd/bin/php83/php.exe"
+COMPOSER="C:/Users/shaik/.config/herd/bin/composer.bat"
+```
+
+Run tests: `"C:/Users/shaik/.config/herd/bin/php83/php.exe" vendor/bin/phpunit`
+Install deps: `"C:/Users/shaik/.config/herd/bin/composer.bat" install --no-interaction`
+
+
+
 \## Key reference
 
 See planning/cat-framework-planning-prompt.md for the full
