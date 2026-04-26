@@ -25,6 +25,23 @@ An open-source, modular PHP framework for building computer-assisted translation
 | [`catframework/qa`](packages/qa) | Per-segment quality checks (tags, numbers, whitespace, empty translations) |
 | [`catframework/terminology`](packages/terminology) | TBX v2 import and term recognition with SQLite backend |
 
+### Phase 3 — MT, Office filters, Cross-segment QA
+
+| Package | Description |
+|---|---|
+| [`catframework/mt`](packages/mt) | Machine translation adapters for DeepL and Google Translate (PSR-18 HTTP client injected) |
+| [`catframework/filter-xlsx`](packages/filter-xlsx) | Excel file filter (`.xlsx`) with shared-strings deduplication and cell-type awareness |
+| [`catframework/filter-pptx`](packages/filter-pptx) | PowerPoint file filter (`.pptx`) — slide body and speaker notes only, DrawingML-safe |
+| `catframework/qa` _(extended)_ | `SegmentConsistencyCheck` — cross-segment QA: flags identical source segments with divergent translations |
+
+### Phase 4 — Project, Workflow, API Service
+
+| Package / Project | Description |
+|---|---|
+| [`catframework/project`](packages/project) | Project manifest (`catproject.json`) and portable `.catpack` archive bundling source, TM, and glossary |
+| [`catframework/workflow`](packages/workflow) | End-to-end translation workflow orchestrator: extract → segment → TM → MT → QA in one call |
+| [`cat-framework-api`](https://github.com/catframework/cat-framework-api) _(separate repo)_ | Laravel REST API exposing all framework capabilities over HTTP — usable by any tech stack |
+
 ## Requirements
 
 - PHP 8.2+

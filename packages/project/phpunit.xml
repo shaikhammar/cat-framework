@@ -6,6 +6,7 @@
     <testsuites>
         <testsuite name="project">
             <directory>tests</directory>
+            <exclude>tests/Store/SegmentStoreContractTest.php</exclude>
         </testsuite>
     </testsuites>
     <source>
