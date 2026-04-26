@@ -8,7 +8,7 @@ use CatFramework\Core\Contract\MachineTranslationInterface;
 use CatFramework\Core\Contract\TerminologyProviderInterface;
 use CatFramework\Core\Contract\TranslationMemoryInterface;
 use CatFramework\Core\Enum\QualitySeverity;
-use CatFramework\Core\Enum\SegmentState;
+use CatFramework\Core\Enum\SegmentStatus;
 use CatFramework\Core\Model\BilingualDocument;
 use CatFramework\Core\Model\QualityIssue;
 use CatFramework\Core\Model\SegmentPair;
@@ -98,12 +98,13 @@ final class WorkflowRunner implements WorkflowRunnerInterface
                     $tmMatched   = true;
 
                     $pair->target = $best->translationUnit->target;
-                    $pair->state  = SegmentState::TRANSLATED;
 
                     if ($best->score >= $this->options->autoConfirmThreshold) {
+                        $pair->status   = SegmentStatus::Translated;
                         $pair->isLocked = true;
                         $exact++;
                     } else {
+                        $pair->status = SegmentStatus::Draft;
                         $fuzzy++;
                     }
                 }
@@ -126,7 +127,7 @@ final class WorkflowRunner implements WorkflowRunnerInterface
             if (!$tmMatched && $tmBestScore < $this->options->mtFillThreshold && $this->mtAdapter !== null) {
                 $t = microtime(true);
                 $pair->target = $this->mtAdapter->translate($pair->source, $this->sourceLang, $targetLang);
-                $pair->state  = SegmentState::TRANSLATED;
+                $pair->status = SegmentStatus::Draft;
                 $mtTime      += microtime(true) - $t;
                 $mt++;
             } elseif (!$tmMatched) {

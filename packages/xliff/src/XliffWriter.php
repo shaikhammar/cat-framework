@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace CatFramework\Xliff;
 
 use CatFramework\Core\Enum\InlineCodeType;
-use CatFramework\Core\Enum\SegmentState;
+use CatFramework\Core\Enum\SegmentStatus;
 use CatFramework\Core\Model\BilingualDocument;
 use CatFramework\Core\Model\InlineCode;
 use CatFramework\Core\Model\Segment;
@@ -60,7 +60,7 @@ class XliffWriter
     {
         $id        = $this->esc($pair->source->id);
         $translate = $pair->isLocked ? 'no' : 'yes';
-        $state     = $this->stateToXliff($pair->state);
+        $state     = $this->statusToXliff($pair->status);
 
         $tu  = '      <trans-unit id="' . $id . '" translate="' . $translate . '">' . "\n";
         $tu .= '        <source>' . $this->renderSegment($pair->source) . '</source>' . "\n";
@@ -122,13 +122,15 @@ class XliffWriter
         };
     }
 
-    private function stateToXliff(SegmentState $state): string
+    private function statusToXliff(SegmentStatus $status): string
     {
-        return match ($state) {
-            SegmentState::INITIAL    => 'new',
-            SegmentState::TRANSLATED => 'translated',
-            SegmentState::REVIEWED   => 'signed-off',
-            SegmentState::FINAL      => 'final',
+        return match ($status) {
+            SegmentStatus::Untranslated => 'new',
+            SegmentStatus::Draft        => 'new',
+            SegmentStatus::Translated   => 'translated',
+            SegmentStatus::Reviewed     => 'signed-off',
+            SegmentStatus::Approved     => 'final',
+            SegmentStatus::Rejected     => 'needs-translation',
         };
     }
 }

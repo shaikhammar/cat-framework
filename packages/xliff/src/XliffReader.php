@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace CatFramework\Xliff;
 
 use CatFramework\Core\Enum\InlineCodeType;
-use CatFramework\Core\Enum\SegmentState;
+use CatFramework\Core\Enum\SegmentStatus;
 use CatFramework\Core\Model\BilingualDocument;
 use CatFramework\Core\Model\InlineCode;
 use CatFramework\Core\Model\Segment;
@@ -60,16 +60,16 @@ class XliffReader
 
             $source = $this->parseSegment($id, $sourceEl instanceof DOMElement ? $sourceEl : null);
             $target = $targetEl instanceof DOMElement ? $this->parseSegment($id, $targetEl) : null;
-            $state  = $targetEl instanceof DOMElement
-                ? $this->xliffToState($targetEl->getAttribute('state'))
-                : SegmentState::INITIAL;
+            $status = $targetEl instanceof DOMElement
+                ? $this->xliffToStatus($targetEl->getAttribute('state'))
+                : SegmentStatus::Untranslated;
 
             // Treat an empty target the same as no target
             if ($target !== null && $target->isEmpty()) {
                 $target = null;
             }
 
-            $doc->addSegmentPair(new SegmentPair($source, $target, $state, $isLocked));
+            $doc->addSegmentPair(new SegmentPair($source, $target, $status, $isLocked));
         }
 
         return $doc;
@@ -148,13 +148,14 @@ class XliffReader
         };
     }
 
-    private function xliffToState(string $state): SegmentState
+    private function xliffToStatus(string $state): SegmentStatus
     {
         return match ($state) {
-            'translated' => SegmentState::TRANSLATED,
-            'signed-off' => SegmentState::REVIEWED,
-            'final'      => SegmentState::FINAL,
-            default      => SegmentState::INITIAL,
+            'translated'        => SegmentStatus::Translated,
+            'signed-off'        => SegmentStatus::Reviewed,
+            'final'             => SegmentStatus::Approved,
+            'needs-translation' => SegmentStatus::Rejected,
+            default             => SegmentStatus::Untranslated,
         };
     }
 }
