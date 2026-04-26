@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CatFramework\Core\Model;
 
-use CatFramework\Core\Enum\SegmentState;
+use CatFramework\Core\Enum\SegmentStatus;
 
 class SegmentPair
 {
@@ -22,9 +22,9 @@ class SegmentPair
         public ?Segment $target = null,
 
         /**
-         * Workflow state. Tracks where this pair is in the translation process.
+         * Workflow status. Tracks where this pair is in the translation process.
          */
-        public SegmentState $state = SegmentState::INITIAL,
+        public SegmentStatus $status = SegmentStatus::Untranslated,
 
         /**
          * Locked pairs should not be edited. Used for: pre-translated segments

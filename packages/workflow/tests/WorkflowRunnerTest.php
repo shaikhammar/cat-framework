@@ -10,7 +10,7 @@ use CatFramework\Core\Contract\TerminologyProviderInterface;
 use CatFramework\Core\Contract\TranslationMemoryInterface;
 use CatFramework\Core\Enum\MatchType;
 use CatFramework\Core\Enum\QualitySeverity;
-use CatFramework\Core\Enum\SegmentState;
+use CatFramework\Core\Enum\SegmentStatus;
 use CatFramework\Core\Model\BilingualDocument;
 use CatFramework\Core\Model\MatchResult;
 use CatFramework\Core\Model\QualityIssue;
@@ -140,7 +140,7 @@ final class WorkflowRunnerTest extends TestCase
         $result = $runner->process('/tmp/test.txt', 'fr-FR');
         $pairs  = $result->document->getSegmentPairs();
 
-        $this->assertSame(SegmentState::TRANSLATED, $pairs[0]->state);
+        $this->assertSame(SegmentStatus::Translated, $pairs[0]->status);
         $this->assertTrue($pairs[0]->isLocked);
         $this->assertSame('[TM] Hello world', $pairs[0]->target->getPlainText());
     }
@@ -156,7 +156,7 @@ final class WorkflowRunnerTest extends TestCase
         $result = $runner->process('/tmp/test.txt', 'fr-FR');
         $pairs  = $result->document->getSegmentPairs();
 
-        $this->assertSame(SegmentState::TRANSLATED, $pairs[0]->state);
+        $this->assertSame(SegmentStatus::Draft, $pairs[0]->status);
         $this->assertFalse($pairs[0]->isLocked);
     }
 

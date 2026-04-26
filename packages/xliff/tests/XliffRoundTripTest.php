@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace CatFramework\Xliff\Tests;
 
 use CatFramework\Core\Enum\InlineCodeType;
-use CatFramework\Core\Enum\SegmentState;
+use CatFramework\Core\Enum\SegmentStatus;
 use CatFramework\Core\Model\BilingualDocument;
 use CatFramework\Core\Model\InlineCode;
 use CatFramework\Core\Model\Segment;
@@ -64,7 +64,7 @@ class XliffRoundTripTest extends TestCase
         $doc->addSegmentPair(new SegmentPair(
             source: new Segment('s1', ['Hello world.']),
             target: new Segment('s1', ['Bonjour le monde.']),
-            state:  SegmentState::TRANSLATED,
+            status: SegmentStatus::Translated,
         ));
 
         $result = $this->writeAndRead($doc, 'plain.xlf');
@@ -73,7 +73,7 @@ class XliffRoundTripTest extends TestCase
         $this->assertCount(1, $pairs);
         $this->assertSame('Hello world.',        $pairs[0]->source->getPlainText());
         $this->assertSame('Bonjour le monde.',   $pairs[0]->target->getPlainText());
-        $this->assertSame(SegmentState::TRANSLATED, $pairs[0]->state);
+        $this->assertSame(SegmentStatus::Translated, $pairs[0]->status);
     }
 
     public function test_untranslated_segment_target_is_null(): void
@@ -85,28 +85,38 @@ class XliffRoundTripTest extends TestCase
         $pairs  = $result->getSegmentPairs();
 
         $this->assertNull($pairs[0]->target);
-        $this->assertSame(SegmentState::INITIAL, $pairs[0]->state);
+        $this->assertSame(SegmentStatus::Untranslated, $pairs[0]->status);
     }
 
-    // --- segment states ---
+    // --- segment statuses ---
 
-    public function test_all_segment_states_round_trip(): void
+    public function test_xliff_roundtrippable_statuses(): void
     {
-        $doc = new BilingualDocument('en-US', 'fr-FR', 'states.txt', 'text/plain');
+        // XLIFF 1.2 has a fixed state vocabulary. Only these four statuses have
+        // distinct round-trip representations. Draft and Rejected both map to
+        // 'new'/'needs-translation' which read back as Untranslated — that is
+        // expected behaviour (XLIFF is a file exchange format, not a DB).
+        $cases = [
+            [SegmentStatus::Untranslated, SegmentStatus::Untranslated],
+            [SegmentStatus::Translated,   SegmentStatus::Translated],
+            [SegmentStatus::Reviewed,     SegmentStatus::Reviewed],
+            [SegmentStatus::Approved,     SegmentStatus::Approved],
+        ];
 
-        foreach (SegmentState::cases() as $i => $state) {
+        $doc = new BilingualDocument('en-US', 'fr-FR', 'states.txt', 'text/plain');
+        foreach ($cases as $i => [$input, $_]) {
             $doc->addSegmentPair(new SegmentPair(
                 source: new Segment('s' . $i, ['Text.']),
                 target: new Segment('s' . $i, ['Texte.']),
-                state:  $state,
+                status: $input,
             ));
         }
 
         $result = $this->writeAndRead($doc, 'states.xlf');
         $pairs  = $result->getSegmentPairs();
 
-        foreach (SegmentState::cases() as $i => $state) {
-            $this->assertSame($state, $pairs[$i]->state, "State mismatch at index {$i}");
+        foreach ($cases as $i => [, $expected]) {
+            $this->assertSame($expected, $pairs[$i]->status, "Status mismatch at index {$i}");
         }
     }
 
@@ -172,7 +182,6 @@ class XliffRoundTripTest extends TestCase
 
     public function test_isolated_codes_round_trip(): void
     {
-        // Codes marked isolated (from segmenter splitting a spanning tag)
         $elements = [
             new InlineCode('b1', InlineCodeType::OPENING, '<b>',  '<b>',  true),
             'Bold text.',
@@ -231,7 +240,7 @@ class XliffRoundTripTest extends TestCase
         $doc->addSegmentPair(new SegmentPair(
             source: new Segment('s1', [$urdu]),
             target: new Segment('s1', [$urdu]),
-            state:  SegmentState::TRANSLATED,
+            status: SegmentStatus::Translated,
         ));
 
         $result = $this->writeAndRead($doc, 'urdu.xlf');
@@ -248,7 +257,7 @@ class XliffRoundTripTest extends TestCase
         $doc->addSegmentPair(new SegmentPair(
             source: new Segment('s1', [$hindi]),
             target: new Segment('s1', [$hindi]),
-            state:  SegmentState::TRANSLATED,
+            status: SegmentStatus::Translated,
         ));
 
         $result = $this->writeAndRead($doc, 'hindi.xlf');
@@ -262,7 +271,7 @@ class XliffRoundTripTest extends TestCase
         $doc->addSegmentPair(new SegmentPair(
             source: new Segment('s1', [$text]),
             target: new Segment('s1', [$text]),
-            state:  SegmentState::TRANSLATED,
+            status: SegmentStatus::Translated,
         ));
 
         $result = $this->writeAndRead($doc, 'special.xlf');
