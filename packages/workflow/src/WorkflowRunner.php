@@ -60,7 +60,10 @@ final class WorkflowRunner implements WorkflowRunnerInterface
                 $expandedPairs[] = $pair;
             } else {
                 foreach ($sentences as $sentence) {
-                    $expandedPairs[] = new SegmentPair(source: $sentence);
+                    $expandedPairs[] = new SegmentPair(
+                        source: $sentence,
+                        context: $pair->context,
+                    );
                 }
             }
         }
@@ -117,7 +120,9 @@ final class WorkflowRunner implements WorkflowRunnerInterface
                 $terminologyTime += microtime(true) - $t;
             }
 
-            // MT fill: only when TM did not match AND best TM score is below the threshold
+            // MT fill: only when TM did not match AND best TM score is below the threshold.
+            // MT fills segments whose best TM score falls below the threshold.
+            // Default threshold 0.0 means MT never runs unless explicitly configured.
             if (!$tmMatched && $tmBestScore < $this->options->mtFillThreshold && $this->mtAdapter !== null) {
                 $t = microtime(true);
                 $pair->target = $this->mtAdapter->translate($pair->source, $this->sourceLang, $targetLang);
