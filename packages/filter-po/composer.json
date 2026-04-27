@@ -1,0 +1,27 @@
+{
+    "name": "catframework/filter-po",
+    "description": "GNU gettext PO file filter for the CAT Framework",
+    "type": "library",
+    "version": "0.1.0",
+    "require": {
+        "php": "^8.2",
+        "ext-mbstring": "*",
+        "catframework/core": "^0.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "CatFramework\\FilterPo\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "CatFramework\\FilterPo\\Tests\\": "tests/"
+        }
+    },
+    "repositories": [
+        {"type": "path", "url": "../core"}
+    ]
+}

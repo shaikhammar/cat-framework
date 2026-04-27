@@ -1,0 +1,20 @@
+# PO fixture with fuzzy entries and plural forms
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#, fuzzy
+msgid "Fuzzy entry"
+msgstr "Old translation"
+
+msgid "Normal entry"
+msgstr ""
+
+msgid "One item"
+msgid_plural "%d items"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Another entry"
+msgstr ""
