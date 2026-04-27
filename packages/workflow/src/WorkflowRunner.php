@@ -12,6 +12,9 @@ use CatFramework\Core\Enum\SegmentStatus;
 use CatFramework\Core\Model\BilingualDocument;
 use CatFramework\Core\Model\QualityIssue;
 use CatFramework\Core\Model\SegmentPair;
+use CatFramework\Core\Model\TranslationUnit;
+use CatFramework\Project\Store\SegmentStoreInterface;
+use CatFramework\Project\Store\SkeletonStoreInterface;
 use CatFramework\Qa\QualityRunner;
 use CatFramework\Segmentation\SrxSegmentationEngine;
 use CatFramework\Workflow\Exception\WorkflowException;
@@ -32,6 +35,8 @@ final class WorkflowRunner implements WorkflowRunnerInterface
         private readonly ?MachineTranslationInterface $mtAdapter = null,
         private readonly ?QualityRunner $qaRunner = null,
         private readonly WorkflowOptions $options = new WorkflowOptions(),
+        private readonly ?SegmentStoreInterface $segmentStore = null,
+        private readonly ?SkeletonStoreInterface $skeletonStore = null,
     ) {}
 
     public function onSegmentProcessed(callable $cb): void
@@ -41,7 +46,10 @@ final class WorkflowRunner implements WorkflowRunnerInterface
 
     public function process(string $filePath, string $targetLang): WorkflowResult
     {
-        $timings = [];
+        $timings  = [];
+        $fileId   = $this->segmentStore !== null || $this->skeletonStore !== null
+            ? $this->generateFileId()
+            : null;
 
         // Step 1: Extract document via filter
         $t = microtime(true);
@@ -134,6 +142,23 @@ final class WorkflowRunner implements WorkflowRunnerInterface
                 $unmatched++;
             }
 
+            // Stream segment to store if configured (before progress callback so the
+            // caller's callback fires after the segment is already persisted)
+            if ($this->segmentStore !== null && $fileId !== null) {
+                $this->segmentStore->persistSegment($pair, $index, $fileId);
+            }
+
+            // Auto-populate TM with all pairs that have a translation
+            if ($this->options->autoWriteToTm && $this->translationMemory !== null && $pair->target !== null) {
+                $this->translationMemory->store(new TranslationUnit(
+                    source:         $pair->source,
+                    target:         $pair->target,
+                    sourceLanguage: $this->sourceLang,
+                    targetLanguage: $targetLang,
+                    createdAt:      new \DateTimeImmutable(),
+                ));
+            }
+
             // Progress callback (0-based index)
             if ($this->onSegmentProcessed !== null) {
                 ($this->onSegmentProcessed)($pair, $index, $total);
@@ -163,6 +188,14 @@ final class WorkflowRunner implements WorkflowRunnerInterface
         }
         $timings['xliff'] = microtime(true) - $t;
 
+        // Step 6: Persist skeleton
+        $t = microtime(true);
+        if ($this->skeletonStore !== null && $fileId !== null) {
+            $skeletonBytes = json_encode($doc->skeleton, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            $this->skeletonStore->store($fileId, $doc->mimeType, $skeletonBytes);
+        }
+        $timings['store'] = microtime(true) - $t;
+
         return new WorkflowResult(
             document: $doc,
             qaIssues: $qaIssues,
@@ -174,6 +207,7 @@ final class WorkflowRunner implements WorkflowRunnerInterface
             ),
             xliffPath: $xliffPath,
             timings: $timings,
+            storeFileId: $fileId,
         );
     }
 
@@ -203,5 +237,14 @@ final class WorkflowRunner implements WorkflowRunnerInterface
             QualitySeverity::WARNING => 1,
             QualitySeverity::ERROR   => 2,
         };
+    }
+
+    private function generateFileId(): string
+    {
+        $bytes = random_bytes(16);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40); // version 4
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80); // variant RFC 4122
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }
 }
