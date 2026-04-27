@@ -2,6 +2,7 @@
     "name": "catframework/filter-docx",
     "description": "DOCX (.docx) file filter for the CAT Framework",
     "type": "library",
+    "version": "0.1.0",
     "require": {
         "php": "^8.2",
         "catframework/core": "^0.1",
