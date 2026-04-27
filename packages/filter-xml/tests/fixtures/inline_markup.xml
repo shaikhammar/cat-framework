@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <string name="greeting">Hello <b>world</b></string>
+    <string name="plain">Plain text</string>
+    <container>
+        <item>First item</item>
+        <item>Second item</item>
+    </container>
+</resources>

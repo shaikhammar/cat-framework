@@ -1,0 +1,13 @@
+# PO fixture testing escape sequences
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Line one\nLine two"
+msgstr ""
+
+msgid "Say \"hello\""
+msgstr ""
+
+msgid "Tab\there"
+msgstr ""
