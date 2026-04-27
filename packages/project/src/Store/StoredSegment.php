@@ -33,5 +33,7 @@ readonly class StoredSegment
         public ?string $note,
         public \DateTimeImmutable $createdAt,
         public \DateTimeImmutable $updatedAt,
+        /** Filter-assigned segment ID (e.g. "seg-1") — required for skeleton-based rebuild. */
+        public string $sourceSegmentId = '',
     ) {}
 }

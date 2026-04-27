@@ -47,28 +47,30 @@ class PostgresSegmentStore implements SegmentStoreInterface
         $this->pdo->prepare('
             INSERT INTO segments
                 (id, file_id, project_id, segment_number, source_text, target_text,
-                 source_tags, target_tags, status, word_count, created_at, updated_at)
+                 source_tags, target_tags, status, word_count, source_segment_id, created_at, updated_at)
             VALUES
                 (:id, :file_id, :project_id, :seg_num, :src_text, :tgt_text,
-                 :src_tags::jsonb, :tgt_tags::jsonb, :status, :word_count, :created_at, :updated_at)
+                 :src_tags::jsonb, :tgt_tags::jsonb, :status, :word_count, :source_seg_id, :created_at, :updated_at)
             ON CONFLICT (id) DO UPDATE SET
-                target_text = EXCLUDED.target_text,
-                target_tags = EXCLUDED.target_tags,
-                status      = EXCLUDED.status,
-                updated_at  = EXCLUDED.updated_at
+                target_text       = EXCLUDED.target_text,
+                target_tags       = EXCLUDED.target_tags,
+                status            = EXCLUDED.status,
+                source_segment_id = EXCLUDED.source_segment_id,
+                updated_at        = EXCLUDED.updated_at
         ')->execute([
-            ':id'         => $id,
-            ':file_id'    => $fileId,
-            ':project_id' => $this->projectId,
-            ':seg_num'    => $segmentNumber,
-            ':src_text'   => $src->text,
-            ':tgt_text'   => $tgtText,
-            ':src_tags'   => json_encode($src->tagMap, JSON_THROW_ON_ERROR),
-            ':tgt_tags'   => $tgtTags,
-            ':status'     => $pair->status->value,
-            ':word_count' => $this->countWords($pair->source->getPlainText()),
-            ':created_at' => $now,
-            ':updated_at' => $now,
+            ':id'            => $id,
+            ':file_id'       => $fileId,
+            ':project_id'    => $this->projectId,
+            ':seg_num'       => $segmentNumber,
+            ':src_text'      => $src->text,
+            ':tgt_text'      => $tgtText,
+            ':src_tags'      => json_encode($src->tagMap, JSON_THROW_ON_ERROR),
+            ':tgt_tags'      => $tgtTags,
+            ':status'        => $pair->status->value,
+            ':word_count'    => $this->countWords($pair->source->getPlainText()),
+            ':source_seg_id' => $pair->source->id,
+            ':created_at'    => $now,
+            ':updated_at'    => $now,
         ]);
     }
 
@@ -102,8 +104,9 @@ class PostgresSegmentStore implements SegmentStoreInterface
                 ? json_decode($row['target_tags'], true, 512, JSON_THROW_ON_ERROR)
                 : $row['target_tags'];
 
-            $source = InlineTagSerializer::deserialize($row['source_text'], $srcTags, $row['id'] . '_src');
-            $target = $row['target_text'] !== null
+            $sourceId = $row['source_segment_id'] ?? ($row['id'] . '_src');
+            $source   = InlineTagSerializer::deserialize($row['source_text'], $srcTags, $sourceId);
+            $target   = $row['target_text'] !== null
                 ? InlineTagSerializer::deserialize($row['target_text'], $tgtTags, $row['id'] . '_tgt')
                 : null;
 
@@ -210,22 +213,23 @@ class PostgresSegmentStore implements SegmentStoreInterface
             : ($row['target_tags'] ?? []);
 
         return new StoredSegment(
-            id:             $row['id'],
-            fileId:         $row['file_id'],
-            segmentNumber:  (int) $row['segment_number'],
-            sourceText:     $row['source_text'],
-            targetText:     $row['target_text'],
-            sourceTags:     $srcTags,
-            targetTags:     $tgtTags,
-            status:         SegmentStatus::from($row['status']),
-            wordCount:      (int) $row['word_count'],
-            tmMatchPercent: isset($row['tm_match_percent']) ? (int) $row['tm_match_percent'] : null,
-            tmMatchOrigin:  $row['tm_match_origin'] ?? null,
-            contextBefore:  $row['context_before'] ?? null,
-            contextAfter:   $row['context_after'] ?? null,
-            note:           $row['note'] ?? null,
-            createdAt:      new \DateTimeImmutable($row['created_at']),
-            updatedAt:      new \DateTimeImmutable($row['updated_at']),
+            id:               $row['id'],
+            fileId:           $row['file_id'],
+            segmentNumber:    (int) $row['segment_number'],
+            sourceText:       $row['source_text'],
+            targetText:       $row['target_text'],
+            sourceTags:       $srcTags,
+            targetTags:       $tgtTags,
+            status:           SegmentStatus::from($row['status']),
+            wordCount:        (int) $row['word_count'],
+            tmMatchPercent:   isset($row['tm_match_percent']) ? (int) $row['tm_match_percent'] : null,
+            tmMatchOrigin:    $row['tm_match_origin'] ?? null,
+            contextBefore:    $row['context_before'] ?? null,
+            contextAfter:     $row['context_after'] ?? null,
+            note:             $row['note'] ?? null,
+            createdAt:        new \DateTimeImmutable($row['created_at']),
+            updatedAt:        new \DateTimeImmutable($row['updated_at']),
+            sourceSegmentId:  $row['source_segment_id'] ?? '',
         );
     }
 

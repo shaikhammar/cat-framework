@@ -45,8 +45,9 @@ class InMemorySegmentStore implements SegmentStoreInterface
         $pairs    = [];
 
         foreach ($segments as $stored) {
-            $source = InlineTagSerializer::deserialize($stored->sourceText, $stored->sourceTags, $stored->id . '_src');
-            $target = $stored->targetText !== null
+            $sourceId = $stored->sourceSegmentId !== '' ? $stored->sourceSegmentId : ($stored->id . '_src');
+            $source   = InlineTagSerializer::deserialize($stored->sourceText, $stored->sourceTags, $sourceId);
+            $target   = $stored->targetText !== null
                 ? InlineTagSerializer::deserialize($stored->targetText, $stored->targetTags, $stored->id . '_tgt')
                 : null;
 
@@ -149,22 +150,23 @@ class InMemorySegmentStore implements SegmentStoreInterface
         }
 
         return new StoredSegment(
-            id:             $fileId . '_' . $segmentNumber,
-            fileId:         $fileId,
-            segmentNumber:  $segmentNumber,
-            sourceText:     $serialized->text,
-            targetText:     $targetText,
-            sourceTags:     $serialized->tagMap,
-            targetTags:     $targetTags,
-            status:         $pair->status,
-            wordCount:      $this->countWords($pair->source->getPlainText()),
-            tmMatchPercent: null,
-            tmMatchOrigin:  null,
-            contextBefore:  null,
-            contextAfter:   null,
-            note:           null,
-            createdAt:      $now,
-            updatedAt:      $now,
+            id:               $fileId . '_' . $segmentNumber,
+            fileId:           $fileId,
+            segmentNumber:    $segmentNumber,
+            sourceText:       $serialized->text,
+            targetText:       $targetText,
+            sourceTags:       $serialized->tagMap,
+            targetTags:       $targetTags,
+            status:           $pair->status,
+            wordCount:        $this->countWords($pair->source->getPlainText()),
+            tmMatchPercent:   null,
+            tmMatchOrigin:    null,
+            contextBefore:    null,
+            contextAfter:     null,
+            note:             null,
+            createdAt:        $now,
+            updatedAt:        $now,
+            sourceSegmentId:  $pair->source->id,
         );
     }
 
